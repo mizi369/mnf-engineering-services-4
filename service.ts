@@ -77,7 +77,7 @@ try {
 
 
 // 3. Fallback Injection
-if (!process.env.API_KEY) process.env.API_KEY = DEFAULT_ENV.API_KEY;
+if (!process.env.API_KEY) process.env.API_KEY = process.env.GEMINI_API_KEY || DEFAULT_ENV.API_KEY;
 if (!process.env.PORT) process.env.PORT = DEFAULT_ENV.PORT;
 
 
@@ -88,6 +88,12 @@ const CONFIG = {
     PORT: parseInt(process.env.PORT || '3000')
 };
 
+// ================= GLOBAL SECURITY & PERSISTENCE =================
+// Ensure temporary directories exist
+const AUTH_DIR = path.resolve(__dirname, '.wwebjs_auth');
+if (!fs.existsSync(AUTH_DIR)) {
+    fs.mkdirSync(AUTH_DIR, { recursive: true });
+}
 
 console.log('--- MNF NEURAL CORE STARTUP ---');
 console.log(`[SYSTEM] Key Check: ${CONFIG.API_KEY ? '✅ SECURE' : '❌ MISSING'}`);
@@ -825,8 +831,17 @@ function startWhatsApp() {
   client = new Client({
     authStrategy: new LocalAuth({ clientId: 'mnf-neural-v7', dataPath: './.wwebjs_auth' }),
     puppeteer: { 
-        headless: true, // Visual Browser Mode Disabled
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
+        headless: true, 
+        args: [
+            '--no-sandbox', 
+            '--disable-setuid-sandbox', 
+            '--disable-gpu', 
+            '--disable-dev-shm-usage',
+            '--disable-extensions',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process'
+        ],
         executablePath: process.env.CHROME_BIN || undefined,
     },
     qrMaxRetries: 5
@@ -963,12 +978,19 @@ function startWhatsApp() {
 
 
 io.on('connection', (socket) => {
+    console.log('[SOCKET] New connection:', socket.id);
+    
+    // Immediate status update on connection
     socket.emit('stage-update', WA_STATUS);
     socket.emit('ai-status', isAutoReplyActive);
     socket.emit('dashboard-stats', dashboardStats);
     socket.emit('recent-messages', recentMessages);
     if (currentAdminInfo) socket.emit('admin-info', currentAdminInfo);
 
+    socket.on('cmd-status-check', () => {
+        socket.emit('stage-update', WA_STATUS);
+        socket.emit('dashboard-stats', dashboardStats);
+    });
 
     socket.on('cmd-connect', () => {
         if (client) {

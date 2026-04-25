@@ -421,6 +421,9 @@ const WhatsAppMonitor: React.FC = () => {
       if (s === 'READY') return "WhatsApp Super Admin berjaya dihubungkan. Sistem kini aktif dan sedia digunakan.";
       if (s === 'LAUNCHING' || s === 'RECONNECTING' || s === 'AUTHENTICATED') return "Sistem sedang memulakan sambungan Super Admin...";
       if (s === 'CHECKING...') return "Menyemak status Super Admin...";
+      if (window.location.hostname.includes('vercel.app')) {
+          return "Sistem OFFLINE. Perhatian: Vercel tidak menyokong Socket.io/WhatsApp Web secara stabil. Sila gunakan platform persistent.";
+      }
       return "Sambungan Super Admin terputus. Sila tekan butang 'Connect Super Admin'.";
   };
 

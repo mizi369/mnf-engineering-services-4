@@ -449,16 +449,13 @@ const App: React.FC = () => {
     const onConnect = () => {
         setIsSocketConnected(true);
         socket.emit('cmd-status-check');
-        // ... (existing socket context sync) ...
-        const instructions = localStorage.getItem('mnf_ai_system_instructions');
-        const socialFb = localStorage.getItem('mnf_social_fb');
-        const socialTt = localStorage.getItem('mnf_social_tt');
-        // ...
+        showToast('System Link Active', 'success');
         void syncLiveSlotsToAi();
     };
 
     const onDisconnect = () => {
         setIsSocketConnected(false);
+        showToast('System Link Disconnected', 'error');
     };
 
     socket.on('connect', onConnect);
