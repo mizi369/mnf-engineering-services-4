@@ -7,6 +7,11 @@ dotenv.config();
 export default defineConfig({
   base: '/',
   plugins: [react()],
+  server: {
+    host: true,
+    port: 5173,
+    strictPort: true,
+  },
   resolve: {
     dedupe: ['react', 'react-dom', 'framer-motion'],
   },
