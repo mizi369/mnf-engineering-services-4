@@ -1176,22 +1176,37 @@ async function startServer(port) {
 
     // Vite middleware for development
     if (process.env.NODE_ENV !== "production") {
-        const vite = await createViteServer({
-            server: { middlewareMode: true },
-            appType: "spa",
-        });
-        app.use(vite.middlewares);
+        try {
+            console.log('[SYSTEM] Initializing Vite Middleware (Development Mode)...');
+            const vite = await createViteServer({
+                server: { middlewareMode: true },
+                root: process.cwd(),
+                appType: "spa",
+            });
+            app.use(vite.middlewares);
+            console.log('[SYSTEM] Vite Middleware: ✅ READY');
+        } catch (err) {
+            console.error('[SYSTEM] ❌ Vite Middleware Error:', err.message);
+        }
     } else {
-        const distPath = path.resolve(__dirname, "dist");
-        app.use(express.static(distPath));
-        app.get('*', (req, res) => {
-            res.sendFile(path.join(distPath, "index.html"));
-        });
+        const distPath = path.resolve(process.cwd(), "dist");
+        if (fs.existsSync(distPath)) {
+            console.log('[SYSTEM] Serving Static Assets from:', distPath);
+            app.use(express.static(distPath));
+            app.get('*', (req, res) => {
+                res.sendFile(path.join(distPath, "index.html"));
+            });
+        } else {
+            console.error('[SYSTEM] ❌ PRODUCTION BUILD (dist/) NOT FOUND!');
+            app.get('*', (req, res) => {
+                res.status(500).send('Production build not found. Please run npm run build.');
+            });
+        }
     }
 
     server.listen(port, "0.0.0.0", async () => {
 
-        console.log(`🚀 MNF Neural Engine running on port ${port}`);
+        console.log(`🚀 MNF Neural Engine running on http://0.0.0.0:${port}`);
         
         // Load persistent memory
         await loadNeuralMemory();

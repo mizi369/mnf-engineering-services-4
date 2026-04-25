@@ -248,30 +248,43 @@ const App: React.FC = () => {
     // STARTUP SYNC
     const initSystem = async () => {
         setIsLoading(true);
-        await db.init(); // Fetch data from Supabase
-        setIsLoading(false);
-        checkStatus();
-        await syncLiveSlotsToAi();
+        
+        // Add a safety timeout to prevent permanent loading state
+        const loadingTimeout = setTimeout(() => {
+            console.warn('[SYSTEM] Loading timeout reached. Forcing app start...');
+            setIsLoading(false);
+        }, 8000);
 
-        // Fetch Admin Info from Backend
-        fetch('/api/admin')
-          .then(res => res.json())
-          .then(info => {
-            if (info && info.name) {
-              localStorage.setItem('mnf_admin_name', info.name);
-              setAdminName(info.name);
-              if (info.image) {
-                localStorage.setItem('mnf_admin_image', info.image);
-                setAdminImage(info.image);
+        try {
+          await db.init(); // Fetch data from Supabase
+          checkStatus();
+          void syncLiveSlotsToAi();
+
+          // Fetch Admin Info from Backend
+          fetch('/api/admin')
+            .then(res => res.json())
+            .then(info => {
+              if (info && info.name) {
+                localStorage.setItem('mnf_admin_name', info.name);
+                setAdminName(info.name);
+                if (info.image) {
+                  localStorage.setItem('mnf_admin_image', info.image);
+                  setAdminImage(info.image);
+                }
+                if (info.phone) {
+                  localStorage.setItem('mnf_admin_phone', info.phone);
+                }
+                window.dispatchEvent(new Event('storage'));
+                window.dispatchEvent(new Event('admin-info-updated'));
               }
-              if (info.phone) {
-                localStorage.setItem('mnf_admin_phone', info.phone);
-              }
-              window.dispatchEvent(new Event('storage'));
-              window.dispatchEvent(new Event('admin-info-updated'));
-            }
-          })
-          .catch(err => console.error('Failed to fetch admin info:', err));
+            })
+            .catch(err => console.warn('Failed to fetch admin info (Expected on first run):', err));
+        } catch (err) {
+            console.error('[SYSTEM] Critical init error:', err);
+        } finally {
+            clearTimeout(loadingTimeout);
+            setIsLoading(false);
+        }
     };
     initSystem();
     
