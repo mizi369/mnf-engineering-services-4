@@ -5,8 +5,8 @@
   "main": "service.js",
   "type": "module",
   "scripts": {
-    "start": "tsx service.ts",
-    "dev": "tsx service.ts",
+    "start": "tsx api/index.ts",
+    "dev": "tsx api/index.ts",
     "build": "vite build",
     "vercel-build": "vite build",
     "lint": "tsc --noEmit"

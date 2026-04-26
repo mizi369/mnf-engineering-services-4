@@ -39,7 +39,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // ================= ENV LOADING & SECURITY =================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = path.resolve(__dirname, '.env');
+const envPath = path.resolve(__dirname, '..', '.env');
 
 
 // Hardcoded fallback values (Safety Net)
@@ -90,7 +90,7 @@ const CONFIG = {
 
 // ================= GLOBAL SECURITY & PERSISTENCE =================
 // Ensure temporary directories exist
-const AUTH_DIR = path.resolve(__dirname, '.wwebjs_auth');
+const AUTH_DIR = path.resolve(__dirname, '..', '.wwebjs_auth');
 if (!fs.existsSync(AUTH_DIR)) {
     fs.mkdirSync(AUTH_DIR, { recursive: true });
 }
@@ -135,7 +135,7 @@ let dashboardStats = {
 };
 let recentMessages = [];
 
-const CONTEXT_PATH = path.resolve(__dirname, 'ai_context.json');
+const CONTEXT_PATH = path.resolve(__dirname, '..', 'ai_context.json');
 
 // Persistent AI Context - LIVE UPDATABLE
 let activeAiContext = {
@@ -770,9 +770,11 @@ async function handleGroupNotify(booking, isAuto = false) {
 
 
 // ================= WHATSAPP BRIDGE =================
-
-
-// Helper to fetch and sync admin profile
+/**
+ * PERINGATAN VERCEL: 
+ * Vercel adalah platform Serverless. Puppyeteer/LocalAuth mungkin tidak akan berjalan
+ * secara stabil. Anda dicadangkan menggunakan VPS (Ubuntu) untuk runtime WhatsApp yang kekal.
+ */
 async function fetchAdminProfile() {
     try {
 
@@ -1204,30 +1206,23 @@ async function startServer(port) {
         }
     }
 
-    server.listen(port, "0.0.0.0", async () => {
-
-        console.log(`🚀 MNF Neural Engine running on http://0.0.0.0:${port}`);
-        
-        // Load persistent memory
-        await loadNeuralMemory();
-
-        try {
-            // buka WhatsApp Web sahaja (Commented out for cloud compatibility)
-            // await open("https://web.whatsapp.com");
-            console.log("📱 WhatsApp Web bridge active");
-        } catch (err) {
-            console.error("[SYSTEM] Browser open error:", err.message);
-        }
-
-        // auto start WhatsApp jika ada session
-        if (fs.existsSync("./.wwebjs_auth")) {
-            setTimeout(startWhatsApp, 2000);
-        }
-
-    }).on("error", (err) => {
-        console.error("⚠️ Server error:", err);
-    });
+    if (!process.env.VERCEL) {
+        server.listen(port, "0.0.0.0", async () => {
+            console.log(`🚀 MNF Neural Engine running on http://0.0.0.0:${port}`);
+            await loadNeuralMemory();
+            const authDir = path.resolve(process.cwd(), ".wwebjs_auth");
+            if (fs.existsSync(authDir)) {
+                setTimeout(startWhatsApp, 2000);
+            }
+        }).on("error", (err) => {
+            console.error("⚠️ Server error:", err);
+        });
+    } else {
+        loadNeuralMemory().catch(e => console.error('[VERCEL] Memory load error:', e.message));
+    }
 
 }
 
 startServer(CONFIG.PORT);
+
+export default app;
